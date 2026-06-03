@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Nizwa Fort — AR Story Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=IM+Fell+English:ital@0;1&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sand:#e8d5a3;--sand2:#c9a96e;--sand3:#8a6840;
+  --rust:#8b3a1a;--rust2:#c05a2a;--rust3:#e07a3a;
+  --dark:#12090a;--dark2:#1c120e;--dark3:#261a12;
+  --dark4:#321f14;--surface:#3d2818;
+  --gold:#d4a843;--gold2:#f0c866;--gold3:#fff3d4;
+  --text:#f0e8d8;--text2:#b89a72;--text3:#6a4f35;
+  --teal:#1a7a6a;--teal2:#2ab89a;
+  --border:rgba(212,168,67,0.2);
+  --font-d:'Cinzel',serif;--font-s:'IM Fell English',serif;--font-b:'Jost',sans-serif;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--text);font-family:var(--font-b)}
+#app{width:100%;height:100vh;position:relative;overflow:hidden;max-width:480px;margin:0 auto;background:var(--dark)}
+
+/* GRAIN OVERLAY */
+#app::before{
+  content:'';position:absolute;inset:0;z-index:100;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.35;
+}
+
+.screen{position:absolute;inset:0;opacity:0;transition:opacity 0.4s ease;pointer-events:none;z-index:1;display:flex;flex-direction:column;overflow:hidden}
+.screen.active{opacity:1;pointer-events:all}
+
+/* ─── DIVIDER ORNAMENT ─── */
+.ornament{display:flex;align-items:center;gap:10px;margin:8px 0}
+.ornament::before,.ornament::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.ornament span{font-size:10px;color:var(--gold);letter-spacing:2px}
+
+/* ─── HDR ─── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(18,9,10,0.97);backdrop-filter:blur(10px);flex-shrink:0;z-index:10;position:relative}
+.hdr-logo{font-family:var(--font-d);font-size:13px;color:var(--gold);letter-spacing:2px}
+.hdr-sub{font-family:var(--font-b);font-size:9px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+.hdr-back{background:none;border:none;cursor:pointer;color:var(--text2);font-family:var(--font-b);font-size:11px;letter-spacing:1px;padding:6px 12px;border:1px solid var(--border);border-radius:3px;transition:all 0.2s}
+.hdr-back:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;background:var(--dark2);border-top:1px solid var(--border);padding:6px 0 2px;flex-shrink:0;z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;cursor:pointer;background:none;border:none;color:var(--text3);transition:color 0.2s}
+.tab.active{color:var(--gold)}
+.tab:hover:not(.active){color:var(--text2)}
+.tab-icon{font-size:15px}
+.tab-lbl{font-family:var(--font-b);font-size:8px;letter-spacing:1px;text-transform:uppercase}
+
+/* ═══════════════════════════════════════
+   WELCOME
+═══════════════════════════════════════ */
+#sw{background:var(--dark);justify-content:flex-end}
+.w-hero{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(18,9,10,0.1) 0%,rgba(18,9,10,0.5) 55%,rgba(18,9,10,1) 88%),
+    radial-gradient(ellipse at 50% 30%,rgba(212,168,67,0.12) 0%,transparent 65%);
+}
+.fort-silhouette{
+  position:absolute;bottom:38%;left:0;right:0;height:260px;overflow:hidden;
+}
+.fort-silhouette svg{width:100%;height:100%}
+.w-content{position:relative;z-index:2;padding:0 28px 36px}
+.w-badge{
+  display:inline-block;font-family:var(--font-d);font-size:9px;color:var(--gold);
+  letter-spacing:4px;border:1px solid rgba(212,168,67,0.35);padding:5px 14px;border-radius:2px;
+  margin-bottom:14px;
+}
+.w-title{font-family:var(--font-d);font-size:42px;font-weight:900;letter-spacing:4px;line-height:1.05;color:var(--text);margin-bottom:4px}
+.w-title .fort{color:var(--gold2)}
+.w-sub{font-family:var(--font-s);font-style:italic;font-size:15px;color:var(--text2);margin-bottom:18px;line-height:1.5}
+.w-divider{display:flex;align-items:center;gap:10px;margin:14px 0}
+.w-divider::before,.w-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,67,0.4),transparent)}
+.w-divider span{color:var(--gold);font-size:12px}
+.w-desc{font-size:12px;color:var(--text2);line-height:1.9;margin-bottom:24px;font-weight:300}
+.w-stats{display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.wstat{flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--border)}
+.wstat:last-child{border-right:none}
+.wstat-n{font-family:var(--font-d);font-size:22px;color:var(--gold2);font-weight:600}
+.wstat-l{font-family:var(--font-b);font-size:8px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.btn-primary{
+  width:100%;background:linear-gradient(135deg,var(--rust) 0%,var(--rust2) 100%);
+  color:var(--sand);border:none;padding:16px;font-family:var(--font-d);font-size:12px;
+  letter-spacing:4px;text-transform:uppercase;cursor:pointer;border-radius:3px;
+  transition:all 0.25s;border:1px solid rgba(212,168,67,0.2);
+}
+.btn-primary:hover{background:linear-gradient(135deg,var(--rust2) 0%,var(--rust3) 100%);transform:translateY(-1px)}
+.btn-sec{
+  width:100%;margin-top:10px;background:transparent;color:var(--text2);
+  border:1px solid var(--border);padding:12px;font-family:var(--font-d);font-size:10px;
+  letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all 0.2s;
+}
+.btn-sec:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ═══════════════════════════════════════
+   MAP
+═══════════════════════════════════════ */
+#sm{background:var(--dark)}
+.map-wrap{flex:1;position:relative;overflow:hidden}
+.map-svg{width:100%;height:100%}
+.loc-m{cursor:pointer}
+.m-pulse{fill:none;stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center;animation:mpulse 2.6s ease-out infinite}
+@keyframes mpulse{0%{r:14px;opacity:0.8}100%{r:34px;opacity:0}}
+.m-btn{transition:transform 0.2s;transform-box:fill-box;transform-origin:center}
+.loc-m:hover .m-btn{transform:scale(1.15)}
+.m-lbl{font-family:'Jost',sans-serif;font-size:8px;text-anchor:middle;fill:rgba(184,154,114,0.9)}
+.m-lbl2{font-family:'Jost',sans-serif;font-size:7px;text-anchor:middle;fill:rgba(106,79,53,0.8)}
+.m-disc .m-btn{filter:drop-shadow(0 0 5px rgba(212,168,67,0.6))}
+
+/* ═══════════════════════════════════════
+   SCANNER
+═══════════════════════════════════════ */
+#ss{background:#0a0605;justify-content:center;align-items:center}
+.cam-scanlines{
+  position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0.08) 0px,rgba(0,0,0,0.08) 1px,transparent 1px,transparent 4px);
+}
+.cam-vignette{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,transparent 40%,rgba(0,0,0,0.7) 100%);
+}
+.sc-top-bar{
+  position:absolute;top:0;left:0;right:0;
+  background:rgba(18,9,10,0.9);border-bottom:1px solid var(--border);
+  padding:12px 18px;display:flex;align-items:center;justify-content:space-between;z-index:5;
+}
+.sc-loc-name{font-family:var(--font-d);font-size:14px;color:var(--gold);letter-spacing:2px}
+.sc-back{background:none;border:1px solid var(--border);color:var(--text2);padding:5px 12px;font-family:var(--font-b);font-size:10px;cursor:pointer;border-radius:2px;transition:all 0.2s}
+.sc-back:hover{border-color:var(--gold);color:var(--gold)}
+.vf-wrap{position:relative;width:240px;height:240px}
+.vf-corner{position:absolute;width:26px;height:26px;border-color:var(--gold);border-style:solid}
+.vf-corner.tl{top:0;left:0;border-width:2px 0 0 2px}
+.vf-corner.tr{top:0;right:0;border-width:2px 2px 0 0}
+.vf-corner.bl{bottom:0;left:0;border-width:0 0 2px 2px}
+.vf-corner.br{bottom:0;right:0;border-width:0 2px 2px 0}
+.vf-line{
+  position:absolute;left:10px;right:10px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--gold2),var(--gold),transparent);
+  animation:scanln 1.8s ease-in-out infinite alternate;top:10px;
+  box-shadow:0 0 8px rgba(212,168,67,0.4);
+}
+@keyframes scanln{0%{top:10px}100%{top:222px}}
+.vf-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.vf-reticle{width:20px;height:20px;border:1px solid rgba(212,168,67,0.3);border-radius:50%;position:relative}
+.vf-reticle::after{content:'';position:absolute;inset:4px;background:rgba(212,168,67,0.2);border-radius:50%}
+.qr-preview{position:absolute;inset:32px;opacity:0;transition:opacity 0.6s;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);gap:2px}
+.qr-preview.show{opacity:0.3}
+.qrc{background:var(--gold);border-radius:1px}
+.sc-hud-left{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'Jost',sans-serif;font-size:8px;color:rgba(212,168,67,0.4);line-height:2.2;letter-spacing:1px}
+.sc-hud-right{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:'Jost',sans-serif;font-size:8px;color:rgba(184,154,114,0.4);line-height:2.2;letter-spacing:1px;text-align:right}
+.sc-bottom{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(12,6,5,0.98);border-top:1px solid var(--border);
+  padding:20px 22px 30px;text-align:center;
+}
+.sc-station-name{font-family:var(--font-d);font-size:18px;color:var(--text);margin-bottom:5px;letter-spacing:2px}
+.sc-station-loc{font-family:var(--font-b);font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+.sc-status-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px}
+.sc-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blk 1s ease infinite}
+@keyframes blk{0%,100%{opacity:1}50%{opacity:0.1}}
+.sc-status-txt{font-family:'Jost',sans-serif;font-size:10px;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.btn-unlock{
+  display:none;width:100%;background:linear-gradient(135deg,var(--rust) 0%,var(--rust2) 100%);
+  color:var(--sand);border:1px solid rgba(212,168,67,0.25);padding:15px;
+  font-family:var(--font-d);font-size:11px;letter-spacing:4px;cursor:pointer;
+  border-radius:3px;transition:all 0.25s;text-transform:uppercase;
+}
+.btn-unlock:hover{background:linear-gradient(135deg,var(--rust2) 0%,var(--rust3) 100%)}
+
+/* ═══════════════════════════════════════
+   VIDEO STORY PLAYER
+═══════════════════════════════════════ */
+#sv{background:#000;flex-direction:column}
+.vp-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:rgba(12,6,5,0.97);border-bottom:1px solid var(--border);
+  flex-shrink:0;z-index:30;position:relative;
+}
+.vp-station-badge{
+  font-family:var(--font-b);font-size:8px;color:var(--gold);letter-spacing:3px;
+  text-transform:uppercase;background:rgba(212,168,67,0.1);border:1px solid rgba(212,168,67,0.25);
+  padding:3px 9px;border-radius:2px;display:inline-block;margin-bottom:4px;
+}
+.vp-title{font-family:var(--font-d);font-size:16px;color:var(--text);letter-spacing:1px;line-height:1.2}
+.vp-close-btn{
+  background:rgba(212,168,67,0.08);border:1px solid var(--border);
+  color:var(--text2);width:38px;height:38px;border-radius:4px;
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;flex-shrink:0;font-family:var(--font-b);
+}
+.vp-close-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,168,67,0.15)}
+.vp-iframe-wrap{
+  flex:1;background:#000;position:relative;min-height:0;
+}
+.vp-iframe-wrap iframe{
+  width:100%;height:100%;border:none;display:block;
+}
+.vp-info-panel{
+  background:rgba(12,6,5,0.97);border-top:1px solid var(--border);
+  padding:14px 18px 22px;flex-shrink:0;z-index:30;position:relative;
+}
+.vp-station-name{font-family:var(--font-d);font-size:11px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px}
+.vp-desc{font-family:var(--font-s);font-style:italic;font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px}
+.vp-nav-row{display:flex;gap:10px}
+.vp-nav-btn{
+  flex:1;background:rgba(212,168,67,0.06);border:1px solid var(--border);
+  color:var(--text2);padding:11px;font-family:var(--font-d);font-size:9px;
+  letter-spacing:2px;cursor:pointer;border-radius:3px;transition:all 0.2s;text-transform:uppercase;
+}
+.vp-nav-btn:hover{border-color:var(--gold);color:var(--gold)}
+.vp-nav-btn.primary{
+  background:linear-gradient(135deg,var(--rust),var(--rust2));
+  border-color:rgba(212,168,67,0.3);color:var(--sand);
+}
+.vp-nav-btn.primary:hover{background:linear-gradient(135deg,var(--rust2),var(--rust3))}
+
+/* ═══════════════════════════════════════
+   COLLECTION
+═══════════════════════════════════════ */
+#sc{background:var(--dark)}
+.col-body{flex:1;overflow-y:auto;padding:14px 14px 4px}
+.col-prog-card{
+  background:var(--dark3);border:1px solid var(--border);border-radius:4px;
+  padding:16px;margin-bottom:14px;display:flex;gap:16px;align-items:center;
+}
+.prog-ring{width:64px;height:64px;flex-shrink:0;position:relative}
+.prog-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.pg-track{fill:none;stroke:rgba(212,168,67,0.12);stroke-width:4}
+.pg-fill{fill:none;stroke:var(--gold);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset 1s ease;stroke-dasharray:163;stroke-dashoffset:163}
+.prog-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:13px;font-weight:600;color:var(--gold)}
+.prog-text h3{font-family:var(--font-d);font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:4px}
+.prog-text p{font-family:'Jost',sans-serif;font-size:11px;color:var(--text2);line-height:1.6}
+.col-list{display:flex;flex-direction:column;gap:10px}
+.col-card{
+  background:var(--dark3);border:1px solid var(--border);border-radius:4px;
+  overflow:hidden;cursor:pointer;transition:all 0.2s;display:flex;
+}
+.col-card:hover:not(.locked){border-color:var(--gold);background:var(--dark4)}
+.col-card.locked{opacity:0.45;cursor:default}
+.col-card-num{
+  width:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:var(--dark4);font-family:var(--font-d);font-size:22px;color:rgba(212,168,67,0.15);
+  font-weight:900;border-right:1px solid var(--border);
+}
+.col-card.unlocked .col-card-num{color:var(--gold);background:rgba(212,168,67,0.06)}
+.col-card-icon{font-size:20px}
+.col-card-body{flex:1;padding:13px 14px}
+.col-card-station{font-family:'Jost',sans-serif;font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.col-card-name{font-family:var(--font-d);font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:3px}
+.col-card-loc{font-family:'Jost',sans-serif;font-size:10px;color:var(--text3)}
+.col-card-badge{
+  display:inline-flex;align-items:center;gap:4px;margin-top:5px;
+  font-family:'Jost',sans-serif;font-size:9px;letter-spacing:1px;
+}
+.badge-unlocked{color:var(--gold2)}
+.badge-locked{color:var(--text3)}
+.col-card-arrow{display:flex;align-items:center;padding:0 14px;color:var(--gold);font-size:14px;opacity:0;transition:opacity 0.2s}
+.col-card:hover:not(.locked) .col-card-arrow{opacity:1}
+
+/* TOAST */
+#toast{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-12px);
+  background:var(--dark4);border:1px solid var(--gold);border-radius:4px;
+  padding:10px 20px;font-family:var(--font-b);font-size:10px;color:var(--gold);
+  letter-spacing:1px;opacity:0;transition:all 0.3s;z-index:999;white-space:nowrap;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:2px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="toast"></div>
+
+<!-- ═════════════════════════ WELCOME ═════════════════════════ -->
+<div id="sw" class="screen active">
+  <div class="w-hero"></div>
+  <div class="fort-silhouette">
+    <svg viewBox="0 0 480 260" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="fg" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#3d2818" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#12090a" stop-opacity="1"/>
+        </linearGradient>
+        <linearGradient id="haze" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#d4a843" stop-opacity="0.06"/>
+          <stop offset="100%" stop-color="#d4a843" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect width="480" height="260" fill="url(#haze)"/>
+      <!-- Main fort body -->
+      <polygon points="0,260 0,160 30,160 30,140 60,140 60,80 80,80 80,60 100,60 100,80 120,80 120,60 150,60 150,80 180,80 180,60 210,60 210,40 240,20 270,40 270,60 300,60 300,80 330,80 330,60 360,60 360,80 380,80 380,60 400,60 400,80 420,80 420,140 450,140 450,160 480,160 480,260" fill="url(#fg)"/>
+      <!-- Tower details -->
+      <rect x="210" y="0" width="60" height="45" fill="#321f14" rx="1"/>
+      <rect x="215" y="5" width="10" height="18" fill="#261a12" rx="1"/>
+      <rect x="232" y="5" width="16" height="18" fill="#261a12" rx="1"/>
+      <rect x="255" y="5" width="10" height="18" fill="#261a12" rx="1"/>
+      <!-- Merlons top -->
+      <rect x="215" y="-2" width="8" height="10" fill="#3d2818"/>
+      <rect x="227" y="-2" width="8" height="10" fill="#3d2818"/>
+      <rect x="239" y="-2" width="8" height="10" fill="#3d2818"/>
+      <rect x="251" y="-2" width="8" height="10" fill="#3d2818"/>
+      <rect x="263" y="-2" width="8" height="10" fill="#3d2818"/>
+      <!-- Windows / arrow slits -->
+      <rect x="90" y="95" width="6" height="14" fill="#1c120e" rx="1"/>
+      <rect x="374" y="95" width="6" height="14" fill="#1c120e" rx="1"/>
+      <rect x="168" y="90" width="5" height="12" fill="#1c120e" rx="1"/>
+      <rect x="307" y="90" width="5" height="12" fill="#1c120e" rx="1"/>
+      <!-- Gate arch -->
+      <path d="M 210,200 Q 210,170 240,168 Q 270,170 270,200 L 270,260 L 210,260 Z" fill="#1c120e"/>
+      <path d="M 216,200 Q 216,176 240,174 Q 264,176 264,200" fill="none" stroke="rgba(212,168,67,0.3)" stroke-width="1"/>
+      <!-- Gold accent line at base -->
+      <line x1="0" y1="161" x2="480" y2="161" stroke="rgba(212,168,67,0.15)" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <div class="w-content">
+    <div class="w-badge">◆ AR STORY EXPLORER</div>
+    <div class="w-title">Nizwa<br><span class="fort">Fort</span></div>
+    <div class="w-sub">Where stone remembers what history forgot</div>
+    <div class="w-divider"><span>◆</span></div>
+    <p class="w-desc">Walk through centuries of Omani heritage. Scan the markers at each station to unlock exclusive video stories narrated by expert guides — tales of conquest, craft, and culture etched into every wall.</p>
+    <div class="w-stats">
+      <div class="wstat"><div class="wstat-n">5</div><div class="wstat-l">Stations</div></div>
+      <div class="wstat"><div class="wstat-n">17<span style="font-size:13px">th</span></div><div class="wstat-l">Century</div></div>
+      <div class="wstat"><div class="wstat-n">∞</div><div class="wstat-l">Stories</div></div>
+    </div>
+    <button class="btn-primary" onclick="goScreen('sm')">▶ Begin Your Journey</button>
+    <button class="btn-sec" onclick="goScreen('sc')">View Story Collection</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════ MAP ═════════════════════════ -->
+<div id="sm" class="screen">
+  <div class="hdr">
+    <div>
+      <div class="hdr-logo">Nizwa Fort</div>
+      <div class="hdr-sub">Story Explorer</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span style="font-family:var(--font-d);font-size:11px;color:var(--gold);background:rgba(212,168,67,0.1);border:1px solid var(--border);padding:5px 10px;border-radius:2px" id="disc-badge">0 / 5</span>
+      <button class="hdr-back" onclick="goScreen('sc')">Collection</button>
+    </div>
+  </div>
+
+  <div class="map-wrap">
+    <svg id="fort-map" class="map-svg" viewBox="0 0 420 570" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <rect width="420" height="570" fill="#0e0806"/>
+      <defs>
+        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M20 0L0 0 0 20" fill="none" stroke="rgba(61,40,24,0.5)" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="stone" width="40" height="20" patternUnits="userSpaceOnUse">
+          <rect width="40" height="20" fill="none" stroke="rgba(50,31,20,0.6)" stroke-width="0.5"/>
+          <line x1="20" y1="10" x2="40" y2="10" stroke="rgba(50,31,20,0.4)" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="420" height="570" fill="url(#grid)"/>
+
+      <!-- FORT WALLS outline -->
+      <polygon points="80,100 340,100 380,140 390,420 330,460 90,460 50,420 40,140"
+        fill="#1a0f0a" stroke="rgba(212,168,67,0.25)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Wall texture -->
+      <polygon points="80,100 340,100 380,140 390,420 330,460 90,460 50,420 40,140"
+        fill="url(#stone)" opacity="0.4"/>
+
+      <!-- INNER YARD -->
+      <polygon points="120,175 300,175 320,200 325,390 295,410 125,410 95,390 100,200"
+        fill="#150d08" stroke="rgba(212,168,67,0.12)" stroke-width="1"/>
+
+      <!-- MAIN TOWER (circular) -->
+      <circle cx="210" cy="270" r="70" fill="#1c120c" stroke="rgba(212,168,67,0.2)" stroke-width="1.5"/>
+      <circle cx="210" cy="270" r="54" fill="#14090a" stroke="rgba(212,168,67,0.1)" stroke-width="1"/>
+      <circle cx="210" cy="270" r="8" fill="rgba(212,168,67,0.08)" stroke="rgba(212,168,67,0.2)" stroke-width="1"/>
+      <text x="210" y="267" font-family="Jost" font-size="7" fill="rgba(212,168,67,0.25)" text-anchor="middle">THE</text>
+      <text x="210" y="277" font-family="Jost" font-size="7" fill="rgba(212,168,67,0.25)" text-anchor="middle">TOWER</text>
+
+      <!-- GATE at south -->
+      <rect x="175" y="440" width="70" height="30" fill="#12090a" stroke="rgba(212,168,67,0.2)" stroke-width="1" rx="2"/>
+      <path d="M 185,470 Q 185,452 210,450 Q 235,452 235,470" fill="none" stroke="rgba(212,168,67,0.3)" stroke-width="1"/>
+      <text x="210" y="462" font-family="Jost" font-size="7" fill="rgba(212,168,67,0.25)" text-anchor="middle">ENTRANCE</text>
+
+      <!-- ROOMS corridor areas -->
+      <rect x="60" y="200" width="52" height="180" fill="#160d08" stroke="rgba(212,168,67,0.12)" stroke-width="0.5" rx="1"/>
+      <text x="86" y="280" font-family="Jost" font-size="6" fill="rgba(106,79,53,0.5)" text-anchor="middle">ROOMS</text>
+      <rect x="308" y="200" width="52" height="180" fill="#160d08" stroke="rgba(212,168,67,0.12)" stroke-width="0.5" rx="1"/>
+
+      <!-- UPPER VIEWPOINT (north terrace) -->
+      <rect x="140" y="104" width="140" height="50" fill="#150d08" stroke="rgba(212,168,67,0.12)" stroke-width="0.5" rx="1"/>
+      <text x="210" y="128" font-family="Jost" font-size="7" fill="rgba(106,79,53,0.45)" text-anchor="middle">UPPER TERRACE</text>
+      <text x="210" y="140" font-family="Jost" font-size="6" fill="rgba(106,79,53,0.3)" text-anchor="middle">PANORAMA POINT</text>
+
+      <!-- Walkways -->
+      <line x1="210" y1="470" x2="210" y2="200" stroke="#1c1008" stroke-width="8"/>
+      <line x1="112" y1="290" x2="140" y2="290" stroke="#1c1008" stroke-width="6"/>
+      <line x1="280" y1="290" x2="308" y2="290" stroke="#1c1008" stroke-width="6"/>
+      <line x1="210" y1="154" x2="210" y2="200" stroke="#1c1008" stroke-width="6"/>
+
+      <!-- Merlons / battlements along top wall -->
+      <g fill="#261a10" stroke="rgba(212,168,67,0.15)" stroke-width="0.5">
+        <rect x="80" y="91" width="8" height="10" rx="1"/>
+        <rect x="98" y="91" width="8" height="10" rx="1"/>
+        <rect x="116" y="91" width="8" height="10" rx="1"/>
+        <rect x="280" y="91" width="8" height="10" rx="1"/>
+        <rect x="298" y="91" width="8" height="10" rx="1"/>
+        <rect x="316" y="91" width="8" height="10" rx="1"/>
+        <rect x="334" y="91" width="8" height="10" rx="1"/>
+      </g>
+
+      <!-- STATION MARKERS -->
+      <!-- 0: Entrance Gate -->
+      <g class="loc-m" id="marker-0" onclick="startScan(0)">
+        <circle class="m-pulse" cx="210" cy="500" r="14" stroke="#d4a843" style="animation-delay:0s"/>
+        <circle class="m-pulse" cx="210" cy="500" r="14" stroke="#d4a843" style="animation-delay:1.3s"/>
+        <circle class="m-btn" cx="210" cy="500" r="13" fill="#8b3a1a" stroke="#d4a843" stroke-width="1.5"/>
+        <text x="210" y="505" font-family="monospace" font-size="12" text-anchor="middle" fill="#f0c866">🚪</text>
+        <text class="m-lbl" x="210" y="523">ENTRANCE GATE</text>
+        <text class="m-lbl2" x="210" y="532">Main Entrance</text>
+      </g>
+
+      <!-- 1: Courtyard -->
+      <g class="loc-m" id="marker-1" onclick="startScan(1)">
+        <circle class="m-pulse" cx="210" cy="220" r="14" stroke="#c9a96e" style="animation-delay:0.5s"/>
+        <circle class="m-pulse" cx="210" cy="220" r="14" stroke="#c9a96e" style="animation-delay:1.8s"/>
+        <circle class="m-btn" cx="210" cy="220" r="13" fill="#5a3a1a" stroke="#c9a96e" stroke-width="1.5"/>
+        <text x="210" y="225" font-family="monospace" font-size="12" text-anchor="middle" fill="#e8d5a3">⛩️</text>
+        <text class="m-lbl" x="210" y="243">COURTYARD</text>
+        <text class="m-lbl2" x="210" y="252">Central Courtyard</text>
+      </g>
+
+      <!-- 2: Tower -->
+      <g class="loc-m" id="marker-2" onclick="startScan(2)">
+        <circle class="m-pulse" cx="252" cy="248" r="14" stroke="#8a6840" style="animation-delay:1s"/>
+        <circle class="m-pulse" cx="252" cy="248" r="14" stroke="#8a6840" style="animation-delay:2.3s"/>
+        <circle class="m-btn" cx="252" cy="248" r="13" fill="#321f14" stroke="#8a6840" stroke-width="1.5"/>
+        <text x="252" y="253" font-family="monospace" font-size="12" text-anchor="middle" fill="#c9a96e">🏯</text>
+        <text class="m-lbl" x="252" y="270">THE TOWER</text>
+        <text class="m-lbl2" x="252" y="279">Main Tower</text>
+      </g>
+
+      <!-- 3: Interior Rooms -->
+      <g class="loc-m" id="marker-3" onclick="startScan(3)">
+        <circle class="m-pulse" cx="86" cy="350" r="14" stroke="#6a4f35" style="animation-delay:0.7s"/>
+        <circle class="m-pulse" cx="86" cy="350" r="14" stroke="#6a4f35" style="animation-delay:2s"/>
+        <circle class="m-btn" cx="86" cy="350" r="13" fill="#1c120e" stroke="#6a4f35" stroke-width="1.5"/>
+        <text x="86" y="355" font-family="monospace" font-size="12" text-anchor="middle" fill="#b89a72">🏛️</text>
+        <text class="m-lbl" x="86" y="372">INTERIOR</text>
+        <text class="m-lbl2" x="86" y="381">Rooms & Corridors</text>
+      </g>
+
+      <!-- 4: Upper View -->
+      <g class="loc-m" id="marker-4" onclick="startScan(4)">
+        <circle class="m-pulse" cx="210" cy="138" r="14" stroke="#d4a843" style="animation-delay:1.5s"/>
+        <circle class="m-pulse" cx="210" cy="138" r="14" stroke="#d4a843" style="animation-delay:2.8s"/>
+        <circle class="m-btn" cx="210" cy="138" r="13" fill="#3d2818" stroke="#d4a843" stroke-width="1.5"/>
+        <text x="210" y="143" font-family="monospace" font-size="12" text-anchor="middle" fill="#f0c866">🌄</text>
+        <text class="m-lbl" x="210" y="160">UPPER VIEW</text>
+        <text class="m-lbl2" x="210" y="169">Panorama Point</text>
+      </g>
+
+      <!-- Compass rose -->
+      <g transform="translate(390,38)">
+        <circle r="16" fill="#12090a" stroke="rgba(212,168,67,0.2)" stroke-width="1"/>
+        <text font-family="Cinzel" font-size="9" fill="rgba(212,168,67,0.8)" text-anchor="middle" y="-3" font-weight="600">N</text>
+        <text font-family="Cinzel" font-size="7" fill="rgba(106,79,53,0.6)" text-anchor="middle" y="12">S</text>
+        <line x1="0" y1="-12" x2="0" y2="12" stroke="rgba(212,168,67,0.15)" stroke-width="0.5"/>
+        <line x1="-12" y1="0" x2="12" y2="0" stroke="rgba(212,168,67,0.15)" stroke-width="0.5"/>
+        <polygon points="0,-10 2.5,0 0,-2 -2.5,0" fill="rgba(212,168,67,0.7)"/>
+      </g>
+
+      <!-- Legend -->
+      <g transform="translate(16,540)">
+        <rect width="120" height="26" rx="2" fill="rgba(12,9,6,0.8)" stroke="rgba(212,168,67,0.15)" stroke-width="0.5"/>
+        <circle cx="14" cy="13" r="5" fill="#8b3a1a" stroke="#d4a843" stroke-width="1"/>
+        <text x="24" y="17" font-family="Jost" font-size="8" fill="rgba(184,154,114,0.8)">Tap to scan</text>
+        <circle cx="76" cy="13" r="5" fill="#8b3a1a" stroke="#d4a843" stroke-width="1"/>
+        <text x="67" y="9" font-family="Jost" font-size="7" fill="rgba(212,168,67,0.6)">✓</text>
+        <text x="86" y="17" font-family="Jost" font-size="8" fill="rgba(184,154,114,0.8)">Done</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active"><span class="tab-icon">◈</span><span class="tab-lbl">Map</span></button>
+    <button class="tab" onclick="goScreen('sc')"><span class="tab-icon">◻</span><span class="tab-lbl">Collection</span></button>
+    <button class="tab" onclick="goScreen('sw')"><span class="tab-icon">⌂</span><span class="tab-lbl">Home</span></button>
+  </div>
+</div>
+
+<!-- ═════════════════════════ SCANNER ═════════════════════════ -->
+<div id="ss" class="screen">
+  <div class="cam-scanlines"></div>
+  <div class="cam-vignette"></div>
+
+  <div class="sc-top-bar">
+    <div>
+      <div style="font-family:var(--font-b);font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px">Station</div>
+      <div class="sc-loc-name" id="sc-loc-name">—</div>
+    </div>
+    <button class="sc-back" onclick="goScreen('sm')">← Map</button>
+  </div>
+
+  <div class="sc-hud-left">LAT: 22.9333°N<br>LON: 57.5333°E<br>ALT: 565m<br>MSL</div>
+  <div class="sc-hud-right">SIGNAL<br>████▒ 82%<br><span id="sc-timer">00:00</span></div>
+
+  <div class="vf-wrap">
+    <div class="vf-corner tl"></div><div class="vf-corner tr"></div>
+    <div class="vf-corner bl"></div><div class="vf-corner br"></div>
+    <div class="vf-line"></div>
+    <div class="qr-preview" id="qr-grid"></div>
+    <div class="vf-center"><div class="vf-reticle"></div></div>
+  </div>
+
+  <div class="sc-bottom">
+    <div class="sc-station-name" id="sc-station-nm">—</div>
+    <div class="sc-station-loc" id="sc-station-loc">Scanning...</div>
+    <div class="sc-status-row">
+      <div class="sc-dot"></div>
+      <div class="sc-status-txt" id="sc-status">INITIALIZING SCAN</div>
+    </div>
+    <button class="btn-unlock" id="btn-unlock" onclick="revealVideo()">▶ Play Story</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════ VIDEO PLAYER ═════════════════════════ -->
+<div id="sv" class="screen">
+  <!-- Top bar — always visible, always clickable -->
+  <div class="vp-topbar">
+    <div>
+      <div class="vp-station-badge" id="vp-badge">Station 1 of 5</div>
+      <div class="vp-title" id="vp-title">The Entrance Gate</div>
+    </div>
+    <button class="vp-close-btn" onclick="closeVideo()">✕</button>
+  </div>
+
+  <!-- Cloudinary direct video stream -->
+  <div class="vp-iframe-wrap">
+    <video id="video-frame" playsinline webkit-playsinline
+      style="width:100%;height:100%;display:block;background:#000;object-fit:contain;"
+      controls preload="auto">
+    </video>
+  </div>
+
+  <!-- Info + navigation panel -->
+  <div class="vp-info-panel">
+    <div class="vp-station-name" id="vp-loc">Main Entrance</div>
+    <div class="vp-desc" id="vp-desc">—</div>
+    <div class="vp-nav-row">
+      <button class="vp-nav-btn" onclick="closeVideo()">← Back to Map</button>
+      <button class="vp-nav-btn primary" onclick="markAndCollect()">✦ Save to Collection</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════ COLLECTION ═════════════════════════ -->
+<div id="sc" class="screen">
+  <div class="hdr">
+    <div>
+      <div class="hdr-logo">Story Collection</div>
+      <div class="hdr-sub">Nizwa Fort · AR Explorer</div>
+    </div>
+    <button class="hdr-back" onclick="goScreen('sm')">← Map</button>
+  </div>
+  <div class="col-body">
+    <div class="col-prog-card">
+      <div class="prog-ring">
+        <svg class="prog-svg" viewBox="0 0 64 64">
+          <circle class="pg-track" cx="32" cy="32" r="26"/>
+          <circle class="pg-fill" id="pg-fill" cx="32" cy="32" r="26"/>
+        </svg>
+        <div class="prog-label" id="pg-label">0/5</div>
+      </div>
+      <div class="prog-text">
+        <h3>Memory Archive</h3>
+        <p id="pg-desc">Scan QR markers at each station to unlock video stories.</p>
+      </div>
+    </div>
+    <div class="col-list" id="col-list"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab" onclick="goScreen('sm')"><span class="tab-icon">◈</span><span class="tab-lbl">Map</span></button>
+    <button class="tab active"><span class="tab-icon">◻</span><span class="tab-lbl">Collection</span></button>
+    <button class="tab" onclick="goScreen('sw')"><span class="tab-icon">⌂</span><span class="tab-lbl">Home</span></button>
+  </div>
+</div>
+
+</div><!-- #app -->
+<script>
+/* ─── DATA ─── */
+function gdrive(id){ return 'https://res.cloudinary.com/drmguybzh/video/upload/' + id + '.mp4'; }
+const STATIONS = [
+  {
+    id:0, name:'The Entrance Gate', loc:'Main Entrance', icon:'🚪',
+    badge:'Station 1 of 5',
+    desc:'Seven centuries of arrivals — soldiers, scholars, merchants — all passed through this very gate.',
+    video: gdrive('Entrance_Gate_z3adj4')
+  },
+  {
+    id:1, name:'The Courtyard', loc:'Central Courtyard', icon:'⛩️',
+    badge:'Station 2 of 5',
+    desc:'The heart of Nizwa Fort — where justice was proclaimed and daily life unfolded beneath the Omani sun.',
+    video: gdrive('Courtyard_aba6zh')
+  },
+  {
+    id:2, name:'The Tower', loc:'Main Tower', icon:'🏯',
+    badge:'Station 3 of 5',
+    desc:'Rising above the Hajar Mountains, the great cylindrical tower was the mightiest defensive structure in Arabia.',
+    video: gdrive('The_Tower_dye9cf')
+  },
+  {
+    id:3, name:'Interior Rooms', loc:'Rooms & Corridors', icon:'🏛️',
+    badge:'Station 4 of 5',
+    desc:'Behind these walls, the daily rhythms of fort life played out — storerooms, sleeping quarters, and secret passages.',
+    video: gdrive('Interior_Rooms_usv76k')
+  },
+  {
+    id:4, name:'Upper View / Panorama', loc:'Top · Viewpoint', icon:'🌄',
+    badge:'Station 5 of 5',
+    desc:'From the highest point, the ancient city of Nizwa spreads before you — unchanged in its soul for a thousand years.',
+    video: gdrive('Upper_view_vaoh55')
+  }
+];
+
+/* ─── STATE ─── */
+let curScreen = 'sw';
+let discovered = new Set();
+let activeScan = null;
+let scanTimer = null;
+let activeVideo = null;
+let toastTO = null;
+
+/* ─── NAVIGATION ─── */
+function goScreen(id) {
+  if (id === curScreen) return;
+  document.getElementById(curScreen).classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  curScreen = id;
+  if (id === 'sc') renderCollection();
+  if (id !== 'sv') { const v = document.getElementById('video-frame'); if(v){ v.pause(); v.removeAttribute('src'); v.load(); } }
+}
+
+/* ─── SCANNER ─── */
+const QR_PATTERN = [1,1,1,0,1,0,1,1,0,0,0,1,0,1,1,0,1,0,0,1,0,0,1,0,1,1,0,1,1,0,0,1,0,1,1,0,0,1,0,1,1,0,1,1,0,1,0,1,1];
+function startScan(id) {
+  activeScan = id;
+  const s = STATIONS[id];
+  goScreen('ss');
+  document.getElementById('sc-loc-name').textContent = s.name;
+  document.getElementById('sc-station-nm').textContent = s.name;
+  document.getElementById('sc-station-loc').textContent = s.loc;
+  document.getElementById('sc-status').textContent = 'SCANNING QR MARKER...';
+  document.getElementById('btn-unlock').style.display = 'none';
+
+  const qr = document.getElementById('qr-grid');
+  qr.innerHTML = '';
+  qr.className = 'qr-preview';
+  QR_PATTERN.forEach(v => {
+    const c = document.createElement('div');
+    c.className = 'qrc';
+    c.style.opacity = v ? '1' : '0';
+    qr.appendChild(c);
+  });
+
+  let t = 0;
+  if (scanTimer) clearInterval(scanTimer);
+  scanTimer = setInterval(() => {
+    t += 0.1;
+    const secs = Math.floor(t), ms = Math.floor((t - secs) * 10);
+    document.getElementById('sc-timer').textContent = '0' + secs + ':' + ms + '0';
+    if (t >= 1.2) qr.classList.add('show');
+    if (t >= 2.8) {
+      clearInterval(scanTimer);
+      document.getElementById('sc-status').textContent = '✓ MARKER IDENTIFIED';
+      const btn = document.getElementById('btn-unlock');
+      btn.style.display = 'block';
+      btn.style.animation = 'none';
+      showToast('◆ QR Matched — Tap to play the story');
+    }
+  }, 100);
+}
+
+/* ─── VIDEO PLAYER (iframe) ─── */
+function revealVideo() {
+  if (activeScan === null) return;
+  discovered.add(activeScan);
+  updateMapMarkers();
+  updateDiscBadge();
+  loadVideoScreen(activeScan);
+  goScreen('sv');
+}
+
+function loadVideoScreen(id) {
+  const s = STATIONS[id];
+  activeVideo = id;
+  document.getElementById('vp-badge').textContent = s.badge;
+  document.getElementById('vp-title').textContent = s.name;
+  document.getElementById('vp-loc').textContent = s.loc;
+  document.getElementById('vp-desc').textContent = s.desc;
+  const v = document.getElementById('video-frame');
+  v.setAttribute('src', s.video);
+  v.load();
+}
+
+function markAndCollect() {
+  if (activeVideo !== null) discovered.add(activeVideo);
+  updateMapMarkers();
+  updateDiscBadge();
+  showToast('✦ Story saved to your collection');
+  goScreen('sc');
+}
+
+function closeVideo() {
+  const v = document.getElementById('video-frame');
+  v.pause();
+  v.removeAttribute('src');
+  v.load();
+  goScreen('sm');
+}
+
+/* ─── MAP ─── */
+function updateMapMarkers() {
+  discovered.forEach(id => {
+    const g = document.getElementById('marker-' + id);
+    if (g) {
+      g.classList.add('m-disc');
+      const circle = g.querySelector('.m-btn');
+      if (circle) { circle.setAttribute('fill', '#5a3a1a'); circle.setAttribute('stroke', '#d4a843'); }
+      // Add checkmark
+      if (!g.querySelector('.m-check')) {
+        const check = document.createElementNS('http://www.w3.org/2000/svg','text');
+        check.setAttribute('font-size','8');
+        check.setAttribute('fill','rgba(212,168,67,0.9)');
+        check.setAttribute('text-anchor','middle');
+        check.setAttribute('class','m-check');
+        // position near the marker
+        const pulse = g.querySelector('.m-pulse');
+        const cx = pulse ? parseFloat(pulse.getAttribute('cx')) : 210;
+        const cy = pulse ? parseFloat(pulse.getAttribute('cy')) : 270;
+        check.setAttribute('x', cx + 8);
+        check.setAttribute('y', cy - 7);
+        check.textContent = '✓';
+        g.appendChild(check);
+      }
+    }
+  });
+}
+function updateDiscBadge() {
+  document.getElementById('disc-badge').textContent = discovered.size + ' / 5';
+}
+
+/* ─── COLLECTION ─── */
+function renderCollection() {
+  const cnt = discovered.size;
+  const circ = 163;
+  const off = circ - (cnt / 5) * circ;
+  document.getElementById('pg-fill').style.strokeDashoffset = off;
+  document.getElementById('pg-label').textContent = cnt + '/5';
+  const descs = [
+    'Scan QR markers at each station to unlock video stories.',
+    'Great start! ' + (5-cnt) + ' more stories await discovery.',
+    "You're halfway through the fort's history.",
+    'Almost complete — keep exploring!',
+    'One final story remains hidden.',
+    '✦ All stories unlocked. The archive is complete.'
+  ];
+  document.getElementById('pg-desc').textContent = descs[cnt];
+
+  const list = document.getElementById('col-list');
+  list.innerHTML = '';
+  STATIONS.forEach((s, i) => {
+    const card = document.createElement('div');
+    const unlocked = discovered.has(i);
+    card.className = 'col-card ' + (unlocked ? 'unlocked' : 'locked');
+    if (unlocked) card.onclick = () => { loadVideoScreen(i); goScreen('sv'); };
+    card.innerHTML = `
+      <div class="col-card-num">${unlocked ? s.icon : (i+1)}</div>
+      <div class="col-card-body">
+        <div class="col-card-station">${s.badge}</div>
+        <div class="col-card-name">${s.name}</div>
+        <div class="col-card-loc">${s.loc}</div>
+        <div class="col-card-badge ${unlocked ? 'badge-unlocked' : 'badge-locked'}">
+          ${unlocked ? '◆ Story unlocked — tap to replay' : '🔒 Scan QR marker to unlock'}
+        </div>
+      </div>
+      ${unlocked ? '<div class="col-card-arrow">›</div>' : ''}
+    `;
+    list.appendChild(card);
+  });
+}
+
+/* ─── TOAST ─── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTO) clearTimeout(toastTO);
+  toastTO = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ─── INIT ─── */
+window.addEventListener('load', () => {
+  const items = document.querySelectorAll('.w-content > *');
+  items.forEach((el, i) => {
+    el.style.cssText = 'opacity:0;transform:translateY(16px);transition:opacity 0.5s ease,transform 0.5s ease;transition-delay:' + (i * 0.1 + 0.2) + 's';
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+  });
+  renderCollection();
+});
+</script>
+</body>
+</html>
